@@ -1,17 +1,22 @@
 import requests
-from solana.rpc.api import Client
-from solders.pubkey import Pubkey
 
-SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"  # Switch to official Solana RPC endpoint
+# Solana RPC URL
+SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
 
-# Initialize Solana client
-solana_client = Client(SOLANA_RPC_URL)
+# Hard-coded preset contracts
+PRESET_CONTRACTS = {
+    "ContractAddress1",
+    "ContractAddress2",
+    "ContractAddress3",
+    # Add more addresses as needed
+}
 
-def manual_rpc_call(wallet_address):
+def calculate_wallet_score(wallet_address):
     """
-    Fetch all tokens owned by the given Solana wallet using manual RPC call.
+    Calculate the score of a wallet based on the number of matching contracts
+    in the hard-coded preset contract list.
     """
-    url = "https://api.mainnet-beta.solana.com"
+    url = SOLANA_RPC_URL
     headers = {"Content-Type": "application/json"}
     payload = {
         "jsonrpc": "2.0",
@@ -23,68 +28,42 @@ def manual_rpc_call(wallet_address):
             {"encoding": "jsonParsed"}
         ]
     }
-    response = requests.post(url, json=payload, headers=headers)
-    print("Manual RPC Response:", response.json())  # Debugging: Print the raw response
-    return response.json()
-
-def get_wallet_tokens(wallet_address):
-    """
-    Fetch all tokens owned by the given Solana wallet using solana-py client.
-    """
-    wallet_pubkey = Pubkey.from_string(wallet_address)  # Convert wallet address to Pubkey
     try:
-        # Debugging: Print wallet_pubkey
-        print("Wallet Pubkey:", wallet_pubkey)
+        response = requests.post(url, json=payload, headers=headers)
+        response_data = response.json()
 
-        response = solana_client.get_token_accounts_by_owner(
-            wallet_pubkey, {"programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"}
-        )
-        
-        # Debugging: Print raw response
-        print("Raw Solana-Py Response:", response)
+        if "result" not in response_data or "value" not in response_data["result"]:
+            print("No tokens found for this wallet.")
+            return 0  # No tokens found
 
-        # Check if the response has the expected structure
-        if not response or "result" not in response or not response["result"].get("value"):
-            return []  # Handle cases where no tokens are found or the response is malformed
+        # Extract unique mint addresses
+        unique_tokens = {
+            account["account"]["data"]["parsed"]["info"]["mint"]
+            for account in response_data["result"]["value"]
+        }
 
-        # Extract mint addresses of tokens
-        tokens = []
-        for account in response["result"]["value"]:
-            mint_address = account["account"]["data"]["parsed"]["info"]["mint"]
-            tokens.append(mint_address)
-        
-        return tokens
+        # Calculate score based on matches with PRESET_CONTRACTS
+        score = len(unique_tokens.intersection(PRESET_CONTRACTS))
+        return score
+
     except Exception as e:
-        # Print error for debugging
-        print(f"Error during Solana-Py call: {e}")
-        raise
+        print(f"Error fetching wallet tokens: {e}")
+        return 0
 
-# Test Functionality
-if __name__ == "__main__":
+def main():
+    """
+    Main function to interact with the user and calculate wallet scores.
+    """
+    print("Welcome to the Solana Wallet Scoring Tool!")
     wallet_address = input("Enter the Solana wallet address: ").strip()
-    try:
-        print("Using Solana-Py Client...")
-        tokens = get_wallet_tokens(wallet_address)
-        if tokens:
-            print(f"Tokens owned by the wallet ({wallet_address}):")
-            for token in tokens:
-                print(token)
-        else:
-            print(f"No tokens found for wallet: {wallet_address}")
-    except Exception as e:
-        print(f"Error using Solana-Py client: {e}")
-        print("Falling back to manual RPC call...")
-        try:
-            manual_response = manual_rpc_call(wallet_address)
-            if manual_response.get("result") and manual_response["result"].get("value"):
-                tokens = [
-                    account["account"]["data"]["parsed"]["info"]["mint"]
-                    for account in manual_response["result"]["value"]
-                ]
-                print(f"Tokens owned by the wallet ({wallet_address}):")
-                for token in tokens:
-                    print(token)
-            else:
-                print(f"No tokens found for wallet: {wallet_address}")
-        except Exception as manual_e:
-            print(f"Error during manual RPC call: {manual_e}")
+
+    if not wallet_address:
+        print("Wallet address is required.")
+        return
+
+    print("Calculating wallet score...")
+    score = calculate_wallet_score(wallet_address)
+    print(f"Wallet Score: {score} (out of {len(PRESET_CONTRACTS)} possible matches)")
+
+if __name__ == "__main__":
+    main()
