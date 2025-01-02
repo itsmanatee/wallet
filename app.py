@@ -11,15 +11,15 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # In-memory leaderboard (replace with a database for persistence)
 leaderboard = []
 
+# app.py
 @app.route("/wallet_score", methods=["POST"])
 def wallet_score():
     """
-    API endpoint to calculate the wallet score based on hard-coded preset contracts.
+    API endpoint to calculate the wallet score and return matches.
     """
-    global leaderboard
     data = request.json
     wallet_address = data.get("wallet_address")
-    wallet_name = data.get("wallet_name")  # Get the wallet name from the request
+    wallet_name = data.get("wallet_name")
 
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
@@ -28,24 +28,13 @@ def wallet_score():
         return jsonify({"error": "Wallet name is required"}), 400
 
     try:
-        # Calculate the score
-        score = calculate_wallet_score(wallet_address)
+        # Get the score and matches
+        result = calculate_wallet_score(wallet_address)
+        score = result["score"]
+        matches = result["matches"]
 
-        # Check for existing wallet entry
-        existing_entry = next((entry for entry in leaderboard if entry["wallet"] == wallet_address), None)
-        if existing_entry:
-            # Update the existing entry with the new name and score
-            existing_entry["name"] = wallet_name
-            existing_entry["score"] = score
-        else:
-            # Add new entry if wallet is not already in leaderboard
-            leaderboard.append({"name": wallet_name, "wallet": wallet_address, "score": score})
-
-        # Keep leaderboard sorted and limited to top 50
-        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:50]
-
-        # Return the calculated score
-        return jsonify({"score": score})
+        # Return the response including matches
+        return jsonify({"score": score, "matches": matches})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

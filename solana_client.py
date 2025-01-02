@@ -12,8 +12,7 @@ PRESET_CONTRACTS = {
 
 def calculate_wallet_score(wallet_address):
     """
-    Calculate the score of a wallet based on the number of matching contracts
-    in the hard-coded preset_contract list.
+    Calculate the wallet score based on matching contracts and return matching addresses.
     """
     url = SOLANA_RPC_URL
     headers = {"Content-Type": "application/json"}
@@ -27,12 +26,13 @@ def calculate_wallet_score(wallet_address):
             {"encoding": "jsonParsed"}
         ]
     }
+
     try:
         response = requests.post(url, json=payload, headers=headers)
         response_data = response.json()
 
         if "result" not in response_data or "value" not in response_data["result"]:
-            return 0  # No tokens found
+            return {"score": 0, "matches": []}
 
         # Extract unique mint addresses
         unique_tokens = {
@@ -40,9 +40,12 @@ def calculate_wallet_score(wallet_address):
             for account in response_data["result"]["value"]
         }
 
-        # Calculate score based on matches with PRESET_CONTRACTS
-        score = len(unique_tokens.intersection(PRESET_CONTRACTS))
-        return score
+        # Calculate matches with preset contracts
+        matches = unique_tokens.intersection(PRESET_CONTRACTS)
+        score = len(matches)
+
+        return {"score": score, "matches": list(matches)}
 
     except Exception as e:
         raise ValueError(f"Error fetching wallet tokens: {e}")
+    
