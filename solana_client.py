@@ -4,8 +4,8 @@ SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
 
 # Hard-coded preset contracts
 PRESET_CONTRACTS = {
-    "ContractAddress1",
-    "ContractAddress2",
+    "6UTMKBD4V4xGmTFtu77ni2dRjrdcvnqcnDkkmBq4pump",
+    "6FEXNNT5ygU7MzJtfL29t7uKNssKjLHmyhWtFGtxpump",
     "ContractAddress3",
     # Add more addresses as needed
 }
