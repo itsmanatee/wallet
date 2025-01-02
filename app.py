@@ -60,7 +60,7 @@ def add_cors_headers(response):
     """
     Add CORS headers to the response.
     """
-    response.headers["Access-Control-Allow-Origin"] = "asgasg.carrd.co"  # Replace with your Carrd domain
+    response.headers["Access-Control-Allow-Origin"] = "*"  # Replace with your Carrd domain
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     return response
