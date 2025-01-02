@@ -4,10 +4,19 @@ SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
 
 # Hard-coded preset contracts
 PRESET_CONTRACTS = {
-    "6UTMKBD4V4xGmTFtu77ni2dRjrdcvnqcnDkkmBq4pump",
-    "6FEXNNT5ygU7MzJtfL29t7uKNssKjLHmyhWtFGtxpump",
-    "ContractAddress3",
-    # Add more addresses as needed
+    "FaP5jTTWfN77U4HR8PkWcxChvQAqqkbrsKvd6WDQpump",
+    "34D7VCSA7uKsCHe5rRs5NpnkGRy7PW4g41asJnZ9pump",
+    "4S91kAoRXRGCRBvfPzyHatbo2aD9uJ5gNQox16k1pump",
+    "66neDuoXESwZtVNDN3176b6JtjUeh5cgk9fzM5sBpump",
+    "61yG5LCoeoqzBdopXPy6BsVPTGdRXht95L68hj5ipump",
+    "CSwKoBoFpoxfZbob9WZgc5fc6TE47b3CD8DugFfspump",
+    "4vfcfjAz1tSA6tWe7cP6Lj7fR8y7VactzTKPxof7pump",
+    "7g4T6qBN5H7g4FFA9F7HY9ndUrkUEqVg7KdtxV55pump",
+    "Am17SgVwo9yLi7J3oAbeGVnSbXYCtbcz6eDT6P7Apump",
+    "9xZTbcX1o2DvdGKQLheHmodc4bCskhfG4uVgy831pump",
+    "9umkdJdE555ZFMyYbi1AXK2VC2Ge6qUwuLH6bwXPpump",
+    "E4P5qPoqedZPnHk8xKUvoD2aj3QAjWaQ9H36kcirpump",
+    "8hVzPgFopqEQmNNoghr5WbPY1LEjW8GzgbLRwuwHpump"
 }
 
 def calculate_wallet_score(wallet_address):
