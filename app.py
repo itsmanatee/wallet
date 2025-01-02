@@ -33,10 +33,16 @@ def wallet_score():
         score = result["score"]
         matches = result["matches"]
 
+        # Update the leaderboard
+        global leaderboard
+        leaderboard.append({"name": wallet_name, "score": score})
+        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:20]  # Keep top 20
+
         # Return the response including matches
         return jsonify({"score": score, "matches": matches})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/leaderboard", methods=["GET"])
 def get_leaderboard():
