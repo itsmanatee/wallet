@@ -55,11 +55,11 @@ def transaction_history():
         lamports = balance_data.get("result", {}).get("value", 0)  # Ensure we safely access the value field
         balance_in_sol = lamports / 1e9  # Convert lamports to SOL
 
-        # Fetch transactions (use getConfirmedSignaturesForAddress2)
+        # Fetch transactions (use getSignaturesForAddress )
         transaction_payload = {
             "jsonrpc": "2.0",
             "id": 1,
-            "method": "getConfirmedSignaturesForAddress2",
+            "method": "getSignaturesForAddress ",
             "params": [wallet_address, {"limit": 10}],
         }
         transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=headers)
