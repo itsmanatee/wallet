@@ -12,7 +12,7 @@ def generate_tax_data(balance_in_sol):
     """
     Generate simulated tax data tied to the wallet's balance.
     """
-    tax_rate = 5.0  # Example: 5% tax rate
+    tax_rate = 22.0  # Example: 5% tax rate
     total_tax_liability = round(balance_in_sol * (tax_rate / 100), 2)
     net_after_tax = round(balance_in_sol - total_tax_liability, 2)
     net_capital_gains = round(balance_in_sol * 0.03, 2)  # Example: Simulated 3% capital gains
@@ -22,8 +22,8 @@ def generate_tax_data(balance_in_sol):
         "tax_rate": f"{tax_rate}%",
         "net_after_tax": f"${net_after_tax}",
         "net_capital_gains": f"${net_capital_gains}",
+        "tax_evadable": "100%",  # Always 100%
     }
-
 
 @app.route("/transaction_history", methods=["POST"])
 def transaction_history():
@@ -96,7 +96,6 @@ def transaction_history():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.after_request
 def add_cors_headers(response):
     """
@@ -106,7 +105,6 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     return response
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
