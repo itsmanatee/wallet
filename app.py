@@ -27,9 +27,6 @@ def generate_tax_data(balance_in_sol):
 
 @app.route("/transaction_history", methods=["POST"])
 def transaction_history():
-    """
-    API endpoint to fetch transaction history of a wallet and provide tax overview.
-    """
     data = request.json
     wallet_address = data.get("wallet_address")
 
@@ -38,6 +35,51 @@ def transaction_history():
 
     try:
         headers = {"Content-Type": "application/json"}
+
+        # Fetch transaction signatures
+        transaction_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getSignaturesForAddress",
+            "params": [wallet_address, {"limit": 1000}],
+        }
+        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=headers)
+        transaction_data = transaction_response.json()
+
+        if "error" in transaction_data or "result" not in transaction_data:
+            return jsonify({"error": "Unable to fetch transactions"}), 400
+
+        if not transaction_data["result"]:
+            return jsonify({"error": "No transactions found"}), 404
+
+        # Fetch transaction details for each signature
+        transactions = []
+        for tx in transaction_data["result"]:
+            signature = tx["signature"]
+            tx_detail_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getTransaction",
+                "params": [signature, {"encoding": "json"}],
+            }
+            tx_detail_response = requests.post(SOLANA_RPC_URL, json=tx_detail_payload, headers=headers)
+            tx_detail_data = tx_detail_response.json()
+
+            # Extract transaction details (simplified for demonstration)
+            meta = tx_detail_data.get("result", {}).get("meta", {})
+            amount = sum([
+                pre_balance - post_balance
+                for pre_balance, post_balance in zip(meta.get("preBalances", []), meta.get("postBalances", []))
+            ]) / 1e9  # Convert lamports to SOL
+
+            transactions.append({
+                "signature": signature,
+                "slot": tx["slot"],
+                "block_time": tx.get("blockTime"),
+                "amount": round(amount, 6),  # Rounded to 6 decimal places
+                "token": "SOL",
+                "flow": "IN" if amount > 0 else "OUT",
+            })
 
         # Fetch current SOL balance
         balance_payload = {
@@ -53,35 +95,7 @@ def transaction_history():
             return jsonify({"error": "Unable to fetch balance"}), 400
 
         lamports = balance_data.get("result", {}).get("value", 0)
-        balance_in_sol = lamports / 1e9  # Convert lamports to SOL
-
-        # Fetch transaction signatures
-        transaction_payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getSignaturesForAddress",
-            "params": [wallet_address, {"limit": 10}],
-        }
-        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=headers)
-        transaction_data = transaction_response.json()
-
-        if "error" in transaction_data or "result" not in transaction_data:
-            return jsonify({"error": "Unable to fetch transactions"}), 400
-
-        if not transaction_data["result"]:
-            return jsonify({"error": "No transactions found"}), 404
-
-        # Parse transactions
-        transactions = []
-        for tx in transaction_data["result"]:
-            transactions.append({
-                "signature": tx["signature"],
-                "slot": tx["slot"],
-                "block_time": tx.get("blockTime"),
-                "amount": 0,  # Placeholder for transaction amount
-                "token": "SOL",  # Replace with logic if token data is available
-                "flow": "IN" if tx.get("err") is None else "OUT",
-            })
+        balance_in_sol = lamports / 1e9
 
         # Generate tax overview
         tax_data = generate_tax_data(balance_in_sol)
