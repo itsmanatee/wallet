@@ -4,18 +4,19 @@ from flask_cors import CORS
 import requests
 
 SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
+COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-def generate_tax_data(balance_in_sol):
+def generate_tax_data(balance_in_usd):
     """
-    Generate simulated tax data tied to the wallet's balance.
+    Generate simulated tax data tied to the wallet's balance in USD.
     """
-    tax_rate = 22.0  # Example: 5% tax rate
-    total_tax_liability = round(balance_in_sol * (tax_rate / 100), 2)
-    net_after_tax = round(balance_in_sol - total_tax_liability, 2)
-    net_capital_gains = round(balance_in_sol * 0.03, 2)  # Example: Simulated 3% capital gains
+    tax_rate = 22.0  # Example: 22% tax rate
+    total_tax_liability = round(balance_in_usd * (tax_rate / 100), 2)
+    net_after_tax = round(balance_in_usd - total_tax_liability, 2)
+    net_capital_gains = round(balance_in_usd * 0.03, 2)  # Example: Simulated 3% capital gains
 
     return {
         "total_liability": f"${total_tax_liability}",
@@ -55,6 +56,16 @@ def transaction_history():
         lamports = balance_data.get("result", {}).get("value", 0)
         balance_in_sol = lamports / 1e9  # Convert lamports to SOL
 
+        # Fetch SOL price in USD
+        price_response = requests.get(COIN_GECKO_API_URL)
+        price_data = price_response.json()
+
+        sol_to_usd = price_data.get("solana", {}).get("usd")
+        if not sol_to_usd:
+            return jsonify({"error": "Unable to fetch SOL price"}), 400
+
+        balance_in_usd = balance_in_sol * sol_to_usd
+
         # Fetch transaction signatures
         transaction_payload = {
             "jsonrpc": "2.0",
@@ -84,15 +95,15 @@ def transaction_history():
             })
 
         # Generate tax overview
-        tax_data = generate_tax_data(balance_in_sol)
+        tax_data = generate_tax_data(balance_in_usd)
 
         return jsonify({
-            "current_balance": balance_in_sol,
+            "current_balance": f"{balance_in_sol} SOL (${balance_in_usd:.2f})",
             "transactions": transactions,
             "tax_overview": tax_data,
         })
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Failed to connect to Solana RPC API"}), 500
+        return jsonify({"error": "Failed to connect to external API"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
