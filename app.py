@@ -25,7 +25,7 @@ def transaction_history():
         payload = {
             "jsonrpc": "2.0",
             "id": 1,
-            "method": "getConfirmedSignaturesForAddress2",
+            "method": "getSignaturesForAddress",
             "params": [wallet_address, {"limit": 10}],
         }
         response = requests.post(SOLANA_RPC_URL, json=payload, headers=headers)
