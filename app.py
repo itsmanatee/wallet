@@ -1,67 +1,77 @@
 import os
 from flask import Flask, request, jsonify
-from solana_client import calculate_wallet_score
 from flask_cors import CORS
+import requests
+
+SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
 
 app = Flask(__name__)
-
-# Allow CORS on your Flask app
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# In-memory leaderboard (replace with a database for persistence)
-leaderboard = []
-
-@app.route("/wallet_score", methods=["POST"])
-def wallet_score():
+@app.route("/transaction_history", methods=["POST"])
+def transaction_history():
     """
-    API endpoint to calculate the wallet score and return matches.
+    API endpoint to fetch transaction history of a wallet and provide tax overview.
     """
     data = request.json
     wallet_address = data.get("wallet_address")
-    wallet_name = data.get("wallet_name")
 
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    if not wallet_name:
-        return jsonify({"error": "Wallet name is required"}), 400
-
     try:
-        # Get the score and matches
-        result = calculate_wallet_score(wallet_address)
-        score = result["score"]
-        matches = result["matches"]
+        # Fetch transaction signatures
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getConfirmedSignaturesForAddress2",
+            "params": [wallet_address, {"limit": 10}],
+        }
+        response = requests.post(SOLANA_RPC_URL, json=payload, headers=headers)
+        response_data = response.json()
 
-        # Update the leaderboard
-        global leaderboard
-        # Remove any existing entry with the same wallet address
-        leaderboard = [entry for entry in leaderboard if entry["wallet"] != wallet_address]
-        # Add the new entry
-        leaderboard.append({"name": wallet_name, "wallet": wallet_address, "score": score})
-        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:100]  # Keep top 20
+        if not response_data.get("result"):
+            return jsonify({"error": "No transactions found"}), 404
 
-        # Return the response including matches
-        return jsonify({"score": score, "matches": matches})
+        # Example: Collect additional transaction details (you can expand this part)
+        transactions = []
+        for tx in response_data["result"]:
+            tx_details = {
+                "signature": tx["signature"],
+                "slot": tx["slot"],
+                "block_time": tx.get("blockTime"),
+                "amount": 0,  # Replace with logic to extract amount
+                "token": "SOL",  # Replace with logic to identify token
+                "flow": "IN" if tx["err"] is None else "OUT",
+            }
+            transactions.append(tx_details)
+
+        # Example: Calculate tax overview (stubbed for now)
+        tax_overview = {
+            "total_liability": "$0",
+            "tax_rate": "0%",
+            "net_after_tax": "$0",
+            "net_capital_gains": "$0",
+            "total_transactions": len(transactions),
+        }
+
+        return jsonify({"transactions": transactions, "tax_overview": tax_overview})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/leaderboard", methods=["GET"])
-def get_leaderboard():
-    """
-    API endpoint to fetch the leaderboard.
-    """
-    return jsonify(leaderboard)
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Default to port 5000 if PORT is not set
-    app.run(host="0.0.0.0", port=port)
 
 @app.after_request
 def add_cors_headers(response):
     """
     Add CORS headers to the response.
     """
-    response.headers["Access-Control-Allow-Origin"] = "asgasg.carrd.co"  # Replace with your Carrd domain
+    response.headers["Access-Control-Allow-Origin"] = "*"  # Replace with your Carrd domain if needed
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     return response
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
