@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 
-SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
+SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -12,10 +12,10 @@ def generate_tax_data(balance_in_sol):
     """
     Generate simulated tax data tied to the wallet's balance.
     """
-    tax_rate = round(balance_in_sol * 0.05, 2)  # 5% tax rate simulation
-    total_tax_liability = round(balance_in_sol * 0.05, 2)  # Tax liability as a percentage of balance
+    tax_rate = 5.0  # Assume a 5% tax rate
+    total_tax_liability = round(balance_in_sol * (tax_rate / 100), 2)  # Tax liability based on the balance
     net_after_tax = round(balance_in_sol - total_tax_liability, 2)  # Remaining balance
-    net_capital_gains = round(balance_in_sol * 0.03, 2)  # Simulate capital gains
+    net_capital_gains = round(balance_in_sol * 0.03, 2)  # Simulate 3% capital gains
 
     return {
         "total_tax_liability": f"${total_tax_liability}",
@@ -52,7 +52,7 @@ def transaction_history():
         if "error" in balance_data:
             return jsonify({"error": "Unable to fetch balance"}), 400
 
-        lamports = balance_data.get("result", 0)
+        lamports = balance_data.get("result", {}).get("value", 0)  # Ensure we safely access the value field
         balance_in_sol = lamports / 1e9  # Convert lamports to SOL
 
         # Fetch transactions (use getConfirmedSignaturesForAddress2)
