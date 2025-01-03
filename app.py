@@ -38,7 +38,7 @@ def wallet_score():
         leaderboard = [entry for entry in leaderboard if entry["wallet"] != wallet_address]
         # Add the new entry
         leaderboard.append({"name": wallet_name, "wallet": wallet_address, "score": score})
-        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:20]  # Keep top 20
+        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:100]  # Keep top 20
 
         # Return the response including matches
         return jsonify({"score": score, "matches": matches})

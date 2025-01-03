@@ -22,7 +22,9 @@ PRESET_CONTRACTS = {
     "2NvyuCVfLSshwpHvuBr7r8XbqcbecVkQYTyEZLYRpump",
     "3Yie9s6iuEmk8aiXYC19xaq2iccTuFzyfKBWv6gFpump",
     "7EjWHZwtstT21dUniWpvVPRrw64cmX3UYFE5crJ8pump",
-    "6cSY6ZXZ2im8DR2q7opgYnU3xZKStJe8z5mzG9twpump"
+    "6cSY6ZXZ2im8DR2q7opgYnU3xZKStJe8z5mzG9twpump",
+    "FL8sHHvjUwyhYE2cejMYSYdWqzdsatKfR5UJHT8pump",
+    "4wRetMpPPa9H3tNpGszkx3bRx2hhkvhJQnejV95Qpump"
 }
 
 def calculate_wallet_score(wallet_address):
