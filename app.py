@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 
-SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
+SOLANA_RPC_URL = "https://rpc.ankr.com/solana/58592e617198b54ff8543437c1898fee2875e8dd80de0602dc87a54511653a40"
 COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
 
 app = Flask(__name__)
