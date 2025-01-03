@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 
-SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=uD0vRSGoxY8QIoa6"
+SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
