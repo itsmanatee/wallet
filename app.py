@@ -46,7 +46,7 @@ def transaction_history():
         transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=headers)
         transaction_data = transaction_response.json()
 
-        if "error" in transaction_data or "result" not in transaction_data:
+        if not transaction_data or "result" not in transaction_data:
             return jsonify({"error": "Unable to fetch transactions"}), 400
 
         if not transaction_data["result"]:
@@ -55,7 +55,10 @@ def transaction_history():
         # Fetch transaction details for each signature
         transactions = []
         for tx in transaction_data["result"]:
-            signature = tx["signature"]
+            signature = tx.get("signature")
+            if not signature:
+                continue
+
             tx_detail_payload = {
                 "jsonrpc": "2.0",
                 "id": 1,
@@ -65,16 +68,26 @@ def transaction_history():
             tx_detail_response = requests.post(SOLANA_RPC_URL, json=tx_detail_payload, headers=headers)
             tx_detail_data = tx_detail_response.json()
 
-            # Extract transaction details (simplified for demonstration)
-            meta = tx_detail_data.get("result", {}).get("meta", {})
-            amount = sum([
-                pre_balance - post_balance
-                for pre_balance, post_balance in zip(meta.get("preBalances", []), meta.get("postBalances", []))
-            ]) / 1e9  # Convert lamports to SOL
+            # Ensure the transaction details exist
+            result = tx_detail_data.get("result", {})
+            meta = result.get("meta", {})
+            if not meta:
+                continue
+
+            # Calculate transaction amount
+            pre_balances = meta.get("preBalances", [])
+            post_balances = meta.get("postBalances", [])
+            if not pre_balances or not post_balances:
+                amount = 0
+            else:
+                amount = sum([
+                    pre_balance - post_balance
+                    for pre_balance, post_balance in zip(pre_balances, post_balances)
+                ]) / 1e9  # Convert lamports to SOL
 
             transactions.append({
                 "signature": signature,
-                "slot": tx["slot"],
+                "slot": tx.get("slot"),
                 "block_time": tx.get("blockTime"),
                 "amount": round(amount, 6),  # Rounded to 6 decimal places
                 "token": "SOL",
@@ -91,7 +104,7 @@ def transaction_history():
         balance_response = requests.post(SOLANA_RPC_URL, json=balance_payload, headers=headers)
         balance_data = balance_response.json()
 
-        if "error" in balance_data:
+        if not balance_data or "result" not in balance_data:
             return jsonify({"error": "Unable to fetch balance"}), 400
 
         lamports = balance_data.get("result", {}).get("value", 0)
