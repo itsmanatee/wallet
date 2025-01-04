@@ -9,6 +9,33 @@ COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=solana&v
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Global variables for storing fetched data
+sol_to_usd = None  # Will hold the SOL price in USD
+rpc_headers = {"Content-Type": "application/json"}
+
+def fetch_sol_price():
+    """
+    Fetch the current SOL price from CoinGecko and store it in a global variable.
+    """
+    global sol_to_usd
+    try:
+        response = requests.get(COIN_GECKO_API_URL)
+        data = response.json()
+        sol_to_usd = data.get("solana", {}).get("usd")
+        if sol_to_usd is None:
+            raise ValueError("SOL price not found in CoinGecko response")
+    except Exception as e:
+        print(f"Error fetching SOL price: {e}")
+        sol_to_usd = None
+
+@app.before_first_request
+def initialize_backend():
+    """
+    Initialize the backend by fetching and storing required data.
+    """
+    print("Initializing backend...")
+    fetch_sol_price()
+
 def generate_tax_data(balance_in_usd):
     """
     Generate simulated tax data tied to the wallet's balance in USD.
@@ -31,15 +58,17 @@ def transaction_history():
     """
     API endpoint to fetch transaction history of a wallet and provide tax overview.
     """
+    global sol_to_usd
     data = request.json
     wallet_address = data.get("wallet_address")
 
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    try:
-        headers = {"Content-Type": "application/json"}
+    if sol_to_usd is None:
+        return jsonify({"error": "SOL price unavailable, please try again later"}), 500
 
+    try:
         # Fetch current SOL balance
         balance_payload = {
             "jsonrpc": "2.0",
@@ -47,7 +76,7 @@ def transaction_history():
             "method": "getBalance",
             "params": [wallet_address],
         }
-        balance_response = requests.post(SOLANA_RPC_URL, json=balance_payload, headers=headers)
+        balance_response = requests.post(SOLANA_RPC_URL, json=balance_payload, headers=rpc_headers)
         balance_data = balance_response.json()
 
         if "error" in balance_data:
@@ -55,15 +84,6 @@ def transaction_history():
 
         lamports = balance_data.get("result", {}).get("value", 0)
         balance_in_sol = lamports / 1e9  # Convert lamports to SOL
-
-        # Fetch SOL price in USD
-        price_response = requests.get(COIN_GECKO_API_URL)
-        price_data = price_response.json()
-
-        sol_to_usd = price_data.get("solana", {}).get("usd")
-        if not sol_to_usd:
-            return jsonify({"error": "Unable to fetch SOL price"}), 400
-
         balance_in_usd = balance_in_sol * sol_to_usd
 
         # Fetch transaction signatures
@@ -73,7 +93,7 @@ def transaction_history():
             "method": "getSignaturesForAddress",
             "params": [wallet_address, {"limit": 1000}],
         }
-        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=headers)
+        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=rpc_headers)
         transaction_data = transaction_response.json()
 
         if "error" in transaction_data or "result" not in transaction_data:
