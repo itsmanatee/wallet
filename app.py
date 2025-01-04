@@ -4,37 +4,12 @@ from flask_cors import CORS
 import requests
 
 SOLANA_RPC_URL = "https://rpc.shyft.to?api_key=A0VotlDzQzb0dUvh"
-COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Global variables for storing fetched data
-sol_to_usd = None  # Will hold the SOL price in USD
-rpc_headers = {"Content-Type": "application/json"}
-
-def fetch_sol_price():
-    """
-    Fetch the current SOL price from CoinGecko and store it in a global variable.
-    """
-    global sol_to_usd
-    try:
-        response = requests.get(COIN_GECKO_API_URL)
-        data = response.json()
-        sol_to_usd = data.get("solana", {}).get("usd")
-        if sol_to_usd is None:
-            raise ValueError("SOL price not found in CoinGecko response")
-    except Exception as e:
-        print(f"Error fetching SOL price: {e}")
-        sol_to_usd = None
-
-@app.before_first_request
-def initialize_backend():
-    """
-    Initialize the backend by fetching and storing required data.
-    """
-    print("Initializing backend...")
-    fetch_sol_price()
+# Hardcoded SOL price in USD
+sol_to_usd = 217.15  # Current SOL price
 
 def generate_tax_data(balance_in_usd):
     """
@@ -65,9 +40,6 @@ def transaction_history():
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    if sol_to_usd is None:
-        return jsonify({"error": "SOL price unavailable, please try again later"}), 500
-
     try:
         # Fetch current SOL balance
         balance_payload = {
@@ -76,7 +48,7 @@ def transaction_history():
             "method": "getBalance",
             "params": [wallet_address],
         }
-        balance_response = requests.post(SOLANA_RPC_URL, json=balance_payload, headers=rpc_headers)
+        balance_response = requests.post(SOLANA_RPC_URL, json=balance_payload, headers={"Content-Type": "application/json"})
         balance_data = balance_response.json()
 
         if "error" in balance_data:
@@ -93,7 +65,7 @@ def transaction_history():
             "method": "getSignaturesForAddress",
             "params": [wallet_address, {"limit": 1000}],
         }
-        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers=rpc_headers)
+        transaction_response = requests.post(SOLANA_RPC_URL, json=transaction_payload, headers={"Content-Type": "application/json"})
         transaction_data = transaction_response.json()
 
         if "error" in transaction_data or "result" not in transaction_data:
